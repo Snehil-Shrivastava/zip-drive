@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DriveFile, parseDriveLink } from "@/utils/drive";
+import { DriveFile, parseDriveLink, formatSize } from "@/utils/drive";
 import DriveItem from "@/components/DriveItem";
 import DriveBreadcrumb, { BreadcrumbEntry } from "@/components/DriveBreadcrumb";
 
@@ -29,13 +29,15 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   const [data, setData] = useState<DriveData | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Folder navigation trail — root is always index 0
-  const [breadcrumb, setBreadcrumb] = useState<BreadcrumbEntry[]>([]);
+  // New states for Multi-selection and Downloading
+  const [selectedFiles, setSelectedFiles] = useState<Map<string, DriveFile>>(
+    new Map(),
+  );
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  // Track the current folder id being viewed (may differ from the root link)
+  const [breadcrumb, setBreadcrumb] = useState<BreadcrumbEntry[]>([]);
   const currentFolderId = useRef<string | null>(null);
 
-  // ── Fetch a folder/file by ID ──────────────────────────────────────────────
   const fetchDrive = useCallback(
     async (id: string, pageToken?: string, append = false) => {
       if (!append) setFetchState("loading");
@@ -73,12 +75,12 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     [],
   );
 
-  // ── React to a new top-level link being submitted ─────────────────────────
   useEffect(() => {
     if (!link) {
       setFetchState("idle");
       setData(null);
       setBreadcrumb([]);
+      setSelectedFiles(new Map());
       return;
     }
 
@@ -93,10 +95,10 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
 
     currentFolderId.current = parsed.id;
     setBreadcrumb([{ id: parsed.id, name: "Root" }]);
+    setSelectedFiles(new Map());
     fetchDrive(parsed.id);
   }, [link, fetchDrive]);
 
-  // ── Update breadcrumb root name once we know the folder name ──────────────
   useEffect(() => {
     if (
       data?.folderName &&
@@ -105,17 +107,14 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     ) {
       setBreadcrumb([{ id: breadcrumb[0].id, name: data.folderName }]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.folderName]);
+  }, [data?.folderName, breadcrumb]);
 
-  // ── Navigate into a subfolder ─────────────────────────────────────────────
   const handleFolderClick = (id: string, name: string) => {
     currentFolderId.current = id;
     setBreadcrumb((prev) => [...prev, { id, name }]);
     fetchDrive(id);
   };
 
-  // ── Navigate back via breadcrumb ──────────────────────────────────────────
   const handleBreadcrumbNavigate = (index: number) => {
     const entry = breadcrumb[index];
     currentFolderId.current = entry.id;
@@ -123,18 +122,71 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     fetchDrive(entry.id);
   };
 
-  // ── Load next page ─────────────────────────────────────────────────────────
   const handleLoadMore = () => {
     if (!data?.nextPageToken || !currentFolderId.current) return;
     fetchDrive(currentFolderId.current, data.nextPageToken, true);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Render states
+  // ── Selection & Download Handlers ──────────────────────────────────────────
+
+  const toggleSelection = (file: DriveFile) => {
+    // Prevent selecting folders for this specific compression download feature
+    if (file.mimeType === "application/vnd.google-apps.folder") return;
+
+    setSelectedFiles((prev) => {
+      const next = new Map(prev);
+      if (next.has(file.id)) next.delete(file.id);
+      else next.set(file.id, file);
+      return next;
+    });
+  };
+
+  const handleDownload = async () => {
+    if (selectedFiles.size === 0) return;
+    setIsDownloading(true);
+
+    try {
+      // Map to array format expected by our new API route
+      const payload = Array.from(selectedFiles.values()).map((f) => ({
+        id: f.id,
+        name: f.name,
+        mimeType: f.mimeType,
+      }));
+
+      const res = await fetch("/api/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: payload }),
+      });
+
+      if (!res.ok) throw new Error("Download failed");
+
+      // Handle the zipped stream as a Blob
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "compressed_images.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Clear selection after successful download
+      setSelectedFiles(new Map());
+    } catch (err) {
+      console.error(err);
+      alert("Failed to compress and download files.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   // ─────────────────────────────────────────────────────────────────────────
 
   if (fetchState === "idle") {
     return (
+      /* Your Existing Idle State JSX */
       <div className="flex flex-col items-center justify-center flex-1 py-20 text-center opacity-40">
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
           <path
@@ -162,15 +214,13 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
         <p className="text-sm font-medium text-white/60 mt-4">
           No drive loaded
         </p>
-        <p className="text-xs text-white/30 mt-1">
-          Paste a public Google Drive link above to get started
-        </p>
       </div>
     );
   }
 
   if (fetchState === "loading") {
     return (
+      /* Your Existing Loading State JSX */
       <div className="flex flex-col items-center justify-center flex-1 py-20 gap-3 opacity-60">
         <svg
           className="animate-spin"
@@ -197,94 +247,99 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
 
   if (fetchState === "error") {
     return (
+      /* Your Existing Error State JSX */
       <div className="flex flex-col items-center justify-center flex-1 py-20 gap-3">
         <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-5 py-4 max-w-md text-left">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            className="text-red-400 shrink-0 mt-0.5"
-          >
-            <circle
-              cx="8"
-              cy="8"
-              r="7"
-              stroke="currentColor"
-              strokeWidth="1.2"
-            />
-            <path
-              d="M8 4.5v4"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-            />
-            <circle cx="8" cy="11" r="0.7" fill="currentColor" />
-          </svg>
           <p className="text-sm text-red-300">{errorMsg}</p>
         </div>
       </div>
     );
   }
 
-  // ── Success ────────────────────────────────────────────────────────────────
+  const totalSelectedBytes = Array.from(selectedFiles.values()).reduce(
+    (acc, file) => acc + (parseInt(file.size || "0", 10) || 0),
+    0,
+  );
   const files = data?.files ?? [];
   const isEmpty = files.length === 0;
 
   return (
     <div className="flex flex-col flex-1 py-6 h-full">
-      {/* Breadcrumb */}
       <DriveBreadcrumb
         trail={breadcrumb}
         onNavigate={handleBreadcrumbNavigate}
       />
 
-      {/* Folder/file name heading */}
-      {data?.folderName && (
-        <h2 className="text-base font-semibold text-white/70 mb-4">
-          {data.folderName}
-        </h2>
-      )}
+      {/* Header Area with Download Button */}
+      <div className="flex items-center justify-between mb-4">
+        {data?.folderName && (
+          <h2 className="text-base font-semibold text-white/70">
+            {data.folderName}
+          </h2>
+        )}
+        <div className="flex gap-10 items-center text-white/50">
+          <span>
+            Total Selected:{" "}
+            <span>{formatSize(totalSelectedBytes.toString())}</span>
+          </span>
+          {/* Download Selected Trigger */}
+          {selectedFiles.size > 0 && (
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {isDownloading ? (
+                <>
+                  <svg
+                    className="animate-spin w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeDasharray="30"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Compressing...
+                </>
+              ) : (
+                `Zip & Download (${selectedFiles.size})`
+              )}
+            </button>
+          )}
+        </div>
+      </div>
 
-      {/* Empty state */}
       {isEmpty && (
         <div className="flex flex-col items-center justify-center flex-1 py-16 opacity-40">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <rect
-              x="4"
-              y="10"
-              width="32"
-              height="24"
-              rx="3"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              fill="none"
-            />
-            <path d="M4 16h32" stroke="currentColor" strokeWidth="1.2" />
-            <path
-              d="M14 6h12"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-            />
-          </svg>
           <p className="text-sm text-white/50 mt-3">This folder is empty</p>
         </div>
       )}
 
-      {/* List view header */}
+      {/* File List Header (List View) */}
       {!isEmpty && view === "list" && (
-        <div className="flex items-center gap-4 px-4 mb-1 text-xs text-white/20 uppercase tracking-wider">
-          <span className="w-5 shrink-0" />
-          <span className="flex-1">Name</span>
-          <span className="hidden sm:block w-28 shrink-0">Type</span>
-          <span className="hidden md:block w-24 shrink-0 text-right">
-            Modified
-          </span>
-          <span className="hidden md:block w-16 shrink-0 text-right">Size</span>
-          <span className="w-4 shrink-0" />
+        <div className="pr-14">
+          <div className="flex items-center gap-4 px-4 mb-1 text-xs text-white/20 uppercase tracking-wider">
+            <span className="w-5 shrink-0" />
+            <span className="flex-1">Name</span>
+            <span className="hidden sm:block w-28 shrink-0">Type</span>
+            <span className="hidden md:block w-24 shrink-0 text-right">
+              Modified
+            </span>
+            <span className="hidden md:block w-16 shrink-0 text-right">
+              Size
+            </span>
+            <span className="w-4 shrink-0" />
+          </div>
         </div>
       )}
+
       <div className="h-full overflow-y-auto">
         {/* File list */}
         {!isEmpty && (
@@ -297,6 +352,8 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
                     file={file}
                     view="list"
                     onFolderClick={handleFolderClick}
+                    selected={selectedFiles.has(file.id)}
+                    onSelect={toggleSelection}
                   />
                 ))}
               </div>
@@ -308,6 +365,8 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
                     file={file}
                     view="grid"
                     onFolderClick={handleFolderClick}
+                    selected={selectedFiles.has(file.id)}
+                    onSelect={toggleSelection}
                   />
                 ))}
               </div>
@@ -321,31 +380,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
                   disabled={loadingMore}
                   className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 border border-white/10 hover:border-white/20 px-5 py-2 rounded-lg transition-colors disabled:opacity-40"
                 >
-                  {loadingMore ? (
-                    <>
-                      <svg
-                        className="animate-spin"
-                        width="13"
-                        height="13"
-                        viewBox="0 0 13 13"
-                        fill="none"
-                      >
-                        <circle
-                          cx="6.5"
-                          cy="6.5"
-                          r="5"
-                          stroke="currentColor"
-                          strokeWidth="1.4"
-                          strokeDasharray="16"
-                          strokeDashoffset="6"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      Loading...
-                    </>
-                  ) : (
-                    "Load more"
-                  )}
+                  {loadingMore ? "Loading..." : "Load more"}
                 </button>
               </div>
             )}
