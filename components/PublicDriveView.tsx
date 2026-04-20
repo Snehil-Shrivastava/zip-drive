@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DriveFile, parseDriveLink, formatSize } from "@/utils/drive";
 import DriveItem from "@/components/DriveItem";
 import DriveBreadcrumb, { BreadcrumbEntry } from "@/components/DriveBreadcrumb";
+import DownloadProgressModal from "@/components/DownloadProgressModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,13 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     new Map(),
   );
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const [downloadProgress, setDownloadProgress] = useState({
+    isOpen: false,
+    receivedBytes: 0,
+    totalBytes: 0,
+  });
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const [breadcrumb, setBreadcrumb] = useState<BreadcrumbEntry[]>([]);
   const currentFolderId = useRef<string | null>(null);
@@ -141,28 +149,81 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     });
   };
 
+  const files = data?.files ?? [];
+  const selectableFiles = files.filter(
+    (f) => f.mimeType !== "application/vnd.google-apps.folder",
+  );
+  const allSelected =
+    selectableFiles.length > 0 &&
+    selectableFiles.every((f) => selectedFiles.has(f.id));
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedFiles(new Map()); // Deselect all
+    } else {
+      const next = new Map(selectedFiles);
+      selectableFiles.forEach((f) => next.set(f.id, f)); // Select all currently loaded files
+      setSelectedFiles(next);
+    }
+  };
+
   const handleDownload = async () => {
     if (selectedFiles.size === 0) return;
+
+    // 1. Setup cancellation controller
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // 2. Open the modal and set loading states
     setIsDownloading(true);
+    setDownloadProgress({
+      isOpen: true,
+      receivedBytes: 0,
+      totalBytes: totalSelectedBytes,
+    });
 
     try {
-      // Map to array format expected by our new API route
+      // 3. Map selected files to the format the API expects
       const payload = Array.from(selectedFiles.values()).map((f) => ({
         id: f.id,
         name: f.name,
         mimeType: f.mimeType,
       }));
 
+      // 4. Fetch the zip stream from our Service Account API route
       const res = await fetch("/api/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ files: payload }),
+        signal: abortController.signal, // Attach the abort signal
       });
 
       if (!res.ok) throw new Error("Download failed");
+      if (!res.body) throw new Error("No response body");
 
-      // Handle the zipped stream as a Blob
-      const blob = await res.blob();
+      // 5. Read the stream chunk-by-chunk to track progress in real-time
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let receivedBytes = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        chunks.push(value);
+        receivedBytes += value.length;
+
+        // Update the modal's progress state
+        setDownloadProgress({
+          isOpen: true,
+          receivedBytes,
+          totalBytes: totalSelectedBytes,
+        });
+      }
+
+      // 6. Combine all chunks into a single Zip file Blob and trigger browser download
+      // @ts-expect-error random
+      const blob = new Blob(chunks, { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -172,13 +233,29 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      // Clear selection after successful download
+      // 7. Clear selection after successful download
       setSelectedFiles(new Map());
-    } catch (err) {
-      console.error(err);
-      alert("Failed to compress and download files.");
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        console.log("Download cancelled by user.");
+      } else {
+        console.error("Download Error:", err);
+        alert("Failed to compress and download files.");
+      }
     } finally {
+      // 8. Clean up states and close the modal
       setIsDownloading(false);
+      setDownloadProgress({ isOpen: false, receivedBytes: 0, totalBytes: 0 });
+      abortControllerRef.current = null;
+    }
+  };
+
+  // Companion function triggered by the "Cancel" button in the Progress Modal
+  const handleCancelDownload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort(); // Triggers AbortError in the fetch catch block
     }
   };
 
@@ -260,7 +337,6 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     (acc, file) => acc + (parseInt(file.size || "0", 10) || 0),
     0,
   );
-  const files = data?.files ?? [];
   const isEmpty = files.length === 0;
 
   return (
@@ -269,15 +345,33 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
         trail={breadcrumb}
         onNavigate={handleBreadcrumbNavigate}
       />
+      {/* {data && (
+        <span className="text-xs font-medium text-white/40 bg-white/5 px-2.5 py-1 rounded-md">
+          {files.length} {files.length === 1 ? "item" : "items"}
+        </span>
+      )} */}
 
       {/* Header Area with Download Button */}
       <div className="flex items-center justify-between mb-4">
         {data?.folderName && (
-          <h2 className="text-base font-semibold text-white/70">
-            {data.folderName}
-          </h2>
+          <div className="flex gap-15 items-center">
+            <h2 className="text-base font-semibold text-white/70">
+              {data.folderName}
+            </h2>
+            {data && (
+              <span className="text-xs font-medium text-white/40 bg-white/5 px-2.5 py-1 rounded-md">
+                {files.length} {files.length === 1 ? "item" : "items"}
+              </span>
+            )}
+          </div>
         )}
         <div className="flex gap-10 items-center text-white/50">
+          <button
+            onClick={handleSelectAll}
+            className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+          >
+            {allSelected ? "Deselect All" : "Select All"}
+          </button>
           <span>
             Total Selected:{" "}
             <span>{formatSize(totalSelectedBytes.toString())}</span>
@@ -387,6 +481,12 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
           </>
         )}
       </div>
+      <DownloadProgressModal
+        isOpen={downloadProgress.isOpen}
+        receivedBytes={downloadProgress.receivedBytes}
+        totalBytes={downloadProgress.totalBytes}
+        onCancel={handleCancelDownload}
+      />
     </div>
   );
 };
