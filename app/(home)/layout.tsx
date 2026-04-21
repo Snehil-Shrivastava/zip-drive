@@ -9,7 +9,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
       <div className="flex flex-1 pr-20">
         <div className="w-80 p-10">
-          <Sidebar isLoggedIn={false} />
+          <Sidebar />
         </div>
         <div className="bg-[#333333] flex-1 rounded-2xl p-10 h-[90vh]">
           {children}
