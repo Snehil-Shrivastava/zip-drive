@@ -5,7 +5,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="h-screen flex flex-col pb-10">
       <div>
-        <TopNav isLoggedIn={false} />
+        <TopNav />
       </div>
       <div className="flex flex-1 pr-20">
         <div className="w-80 p-10">
