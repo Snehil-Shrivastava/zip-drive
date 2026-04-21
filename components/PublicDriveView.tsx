@@ -85,6 +85,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
 
   useEffect(() => {
     if (!link) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFetchState("idle");
       setData(null);
       setBreadcrumb([]);
@@ -113,6 +114,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       breadcrumb.length === 1 &&
       breadcrumb[0].name === "Root"
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBreadcrumb([{ id: breadcrumb[0].id, name: data.folderName }]);
     }
   }, [data?.folderName, breadcrumb]);

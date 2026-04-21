@@ -93,6 +93,7 @@ const ConnectedDriveView = ({ tab, view }: ConnectedDriveViewProps) => {
   // Reset & reload whenever tab changes
   useEffect(() => {
     currentFolderId.current = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBreadcrumb([{ id: "root", name: TAB_LABELS[tab] }]);
     setSelectedFiles(new Map());
     setData(null);

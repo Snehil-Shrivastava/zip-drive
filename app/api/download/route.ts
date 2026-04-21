@@ -71,17 +71,19 @@ export async function POST(req: NextRequest) {
 
           // Process Images through Sharp Stream
           if (file.mimeType.startsWith("image/")) {
-            fileName = fileName.replace(/\.[^/.]+$/, "") + ".webp";
+            // fileName = fileName.replace(/\.[^/.]+$/, "") + ".webp";
+            fileName = fileName.replace(/\.[^/.]+$/, "") + ".jpg";
 
             // Create a sharp transform stream
-            const sharpStream = sharp().webp({ quality: 50, effort: 6 });
+            // const sharpStream = sharp().webp({ quality: 50, effort: 6 });
+            const sharpStream = sharp().jpeg({ quality: 80, mozjpeg: true });
             sharpStream.on("error", (err) =>
               console.error(`Sharp error on ${file.id}:`, err),
             );
 
             // Pipe: Google Drive -> Sharp -> Zip Archive
             archive.append(driveRes.data.pipe(sharpStream), { name: fileName });
-            debugLog += `-> SUCCESS: Streamed and compressed to WebP.\n\n`;
+            debugLog += `-> SUCCESS: Streamed and compressed to JPEG.\n\n`;
           } else {
             // Process Non-Images (PDFs, Videos, etc)
             // Pipe: Google Drive -> Zip Archive
