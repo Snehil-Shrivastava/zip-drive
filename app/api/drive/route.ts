@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     listUrl.searchParams.set("q", `'${id}' in parents and trashed = false`);
     listUrl.searchParams.set("fields", `nextPageToken,files(${FIELDS})`);
     listUrl.searchParams.set("orderBy", "folder,name");
-    listUrl.searchParams.set("pageSize", "50");
+    listUrl.searchParams.set("pageSize", "100");
     listUrl.searchParams.set("supportsAllDrives", "true");
     listUrl.searchParams.set("includeItemsFromAllDrives", "true");
     if (pageToken) listUrl.searchParams.set("pageToken", pageToken);

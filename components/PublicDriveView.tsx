@@ -42,6 +42,8 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   const [data, setData] = useState<DriveData | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   // New states for Multi-selection and Downloading
   const [selectedFiles, setSelectedFiles] = useState<Map<string, DriveFile>>(
     new Map(),
@@ -144,10 +146,22 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     fetchDrive(entry.id);
   };
 
-  const handleLoadMore = () => {
-    if (!data?.nextPageToken || !currentFolderId.current) return;
-    fetchDrive(currentFolderId.current, data.nextPageToken, true);
-  };
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && data?.nextPageToken && !loadingMore) {
+          fetchDrive(currentFolderId.current!, data.nextPageToken, true);
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [data?.nextPageToken, loadingMore, fetchDrive]);
 
   // ── Selection & Download Handlers ──────────────────────────────────────────
 
@@ -540,16 +554,26 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
               </div>
             )}
 
-            {/* Load more */}
+            {/* Sentinel — triggers next page load when scrolled into view */}
             {data?.nextPageToken && (
-              <div className="flex justify-center py-8">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="flex items-center gap-2 text-sm text-black/50 hover:text-white/80 border border-black/10 hover:border-blue-600/20 hover:bg-blue-600/60 px-5 py-2 rounded-lg transition-colors disabled:opacity-40"
-                >
-                  {loadingMore ? "Loading..." : "Load more"}
-                </button>
+              <div ref={sentinelRef} className="flex justify-center py-8">
+                {loadingMore && (
+                  <svg
+                    className="animate-spin w-5 h-5 text-black/30"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeDasharray="30"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                )}
               </div>
             )}
           </>
