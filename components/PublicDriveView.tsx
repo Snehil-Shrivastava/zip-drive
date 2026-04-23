@@ -457,7 +457,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   const isEmpty = files.length === 0;
 
   return (
-    <div className="flex flex-col flex-1 bg-white rounded-xl shadow-[0_4px_25px_2px_rgba(0,0,0,0.08)] h-[75vh]">
+    <div className="flex flex-col flex-1 bg-white rounded-xl shadow-[0_4px_25px_2px_rgba(0,0,0,0.08)] h-[85%]">
       <DriveBreadcrumb
         trail={breadcrumb}
         onNavigate={handleBreadcrumbNavigate}

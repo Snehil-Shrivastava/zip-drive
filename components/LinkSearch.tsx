@@ -39,7 +39,7 @@ const LinkSearch = ({ type, onView }: LinkSearchProps) => {
   const handleClear = () => setValue("");
 
   return (
-    <div className="flex items-center justify-center gap-5 max-w-175 mx-auto relative">
+    <div className="flex items-center justify-center gap-5 max-w-175 relative">
       <div className="relative">
         <svg
           className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#a9a8a8]"
