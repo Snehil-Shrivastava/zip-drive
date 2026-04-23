@@ -217,7 +217,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
 
       // 5. Read the stream chunk-by-chunk to track progress in real-time
       const reader = res.body.getReader();
-      const chunks: Uint8Array[] = [];
+      const chunks: Uint8Array<ArrayBuffer>[] = [];
       let receivedBytes = 0;
 
       while (true) {
@@ -236,7 +236,6 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       }
 
       // 6. Combine all chunks into a single Zip file Blob and trigger browser download
-      // @ts-expect-error random
       const blob = new Blob(chunks, { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -300,7 +299,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       setDownloadProgress({ isOpen: true, receivedBytes: 0, totalBytes });
 
       const reader = res.body.getReader();
-      const chunks: Uint8Array[] = [];
+      const chunks: Uint8Array<ArrayBuffer>[] = [];
       let receivedBytes = 0;
 
       while (true) {
