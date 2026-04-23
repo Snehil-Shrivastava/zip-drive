@@ -46,11 +46,15 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   const [downloadProgress, setDownloadProgress] = useState<{
     isOpen: boolean;
     phase: "zipping" | "downloading";
+    processedFiles: number;
+    totalFiles: number;
     receivedBytes: number;
     totalBytes: number;
   }>({
     isOpen: false,
     phase: "zipping",
+    processedFiles: 0,
+    totalFiles: 0,
     receivedBytes: 0,
     totalBytes: 0,
   });
@@ -192,34 +196,86 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     filename: string,
     signal: AbortSignal,
   ) => {
-    // Phase 1: waiting for server to finish zipping
-    setDownloadProgress({
-      isOpen: true,
-      phase: "zipping",
-      receivedBytes: 0,
-      totalBytes: 0,
-    });
-
-    const res = await fetch("/api/download", {
+    // Phase 1: kick off the job
+    const startRes = await fetch("/api/download/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal,
     });
 
-    if (!res.ok) throw new Error("Download failed");
-    if (!res.body) throw new Error("No response body");
+    if (!startRes.ok) throw new Error("Failed to start download job.");
+    const { jobId, total, folderName } = await startRes.json();
 
-    // Phase 2: server responded, now streaming the zip down
-    const totalBytes = parseInt(res.headers.get("Content-Length") ?? "0", 10);
     setDownloadProgress({
       isOpen: true,
-      phase: "downloading",
+      phase: "zipping",
+      processedFiles: 0,
+      totalFiles: total,
       receivedBytes: 0,
-      totalBytes,
+      totalBytes: 0,
     });
 
-    const reader = res.body.getReader();
+    // Phase 2: listen to SSE progress
+    await new Promise<void>((resolve, reject) => {
+      const evtSource = new EventSource(
+        `/api/download/progress?jobId=${jobId}`,
+      );
+
+      signal.addEventListener("abort", () => {
+        evtSource.close();
+        reject(new DOMException("Aborted", "AbortError"));
+      });
+
+      evtSource.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+
+        setDownloadProgress((prev) => ({
+          ...prev,
+          processedFiles: data.processed,
+          totalFiles: data.total,
+        }));
+
+        if (data.status === "done") {
+          evtSource.close();
+          resolve();
+        }
+
+        if (data.status === "error") {
+          evtSource.close();
+          reject(new Error("Server failed to compress files."));
+        }
+      };
+
+      evtSource.onerror = () => {
+        evtSource.close();
+        reject(new Error("SSE connection lost."));
+      };
+    });
+
+    // Phase 3: download the finished zip
+    setDownloadProgress((prev) => ({
+      ...prev,
+      phase: "downloading",
+      receivedBytes: 0,
+      totalBytes: 0,
+    }));
+
+    const fileRes = await fetch(
+      `/api/download/file?jobId=${jobId}&folderName=${encodeURIComponent(folderName ?? filename)}`,
+      { signal },
+    );
+
+    if (!fileRes.ok) throw new Error("Failed to fetch zip file.");
+    if (!fileRes.body) throw new Error("No response body.");
+
+    const totalBytes = parseInt(
+      fileRes.headers.get("Content-Length") ?? "0",
+      10,
+    );
+    setDownloadProgress((prev) => ({ ...prev, totalBytes }));
+
+    const reader = fileRes.body.getReader();
     const chunks: Uint8Array<ArrayBuffer>[] = [];
     let receivedBytes = 0;
 
@@ -228,12 +284,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       if (done) break;
       chunks.push(value);
       receivedBytes += value.length;
-      setDownloadProgress({
-        isOpen: true,
-        phase: "downloading",
-        receivedBytes,
-        totalBytes,
-      });
+      setDownloadProgress((prev) => ({ ...prev, receivedBytes }));
     }
 
     const blob = new Blob(chunks, { type: "application/zip" });
@@ -278,6 +329,8 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       setDownloadProgress({
         isOpen: false,
         phase: "zipping",
+        processedFiles: 0,
+        totalFiles: 0,
         receivedBytes: 0,
         totalBytes: 0,
       });
@@ -313,6 +366,8 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       setDownloadProgress({
         isOpen: false,
         phase: "zipping",
+        processedFiles: 0,
+        totalFiles: 0,
         receivedBytes: 0,
         totalBytes: 0,
       });
@@ -559,6 +614,8 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       <DownloadProgressModal
         isOpen={downloadProgress.isOpen}
         phase={downloadProgress.phase}
+        processedFiles={downloadProgress.processedFiles}
+        totalFiles={downloadProgress.totalFiles}
         receivedBytes={downloadProgress.receivedBytes}
         totalBytes={downloadProgress.totalBytes}
         onCancel={handleCancelDownload}
