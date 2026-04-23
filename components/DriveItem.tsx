@@ -172,7 +172,7 @@ const DriveItem = ({
       onClick={handleClick}
       className={`group relative flex flex-col gap-2.5 p-4 rounded-xl transition-all text-left shadow-xs ${
         selected
-          ? "bg-blue-500/10 border-blue-500/30"
+          ? "bg-blue-500/40 border-blue-500/30"
           : "bg-neutral-500/10 hover:bg-neutral-500/15"
       }`}
     >
