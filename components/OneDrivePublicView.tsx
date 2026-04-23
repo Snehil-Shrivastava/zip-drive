@@ -3,7 +3,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DriveFile, parseDriveLink, formatSize } from "@/utils/drive";
+import { OneDriveFile, parseDriveLink, formatSize } from "@/utils/drive";
 import DriveItem from "@/components/DriveItem";
 import DriveBreadcrumb, { BreadcrumbEntry } from "@/components/DriveBreadcrumb";
 import DownloadProgressModal from "@/components/DownloadProgressModal";
@@ -11,13 +11,13 @@ import DownloadProgressModal from "@/components/DownloadProgressModal";
 type FetchState = "idle" | "loading" | "success" | "error";
 
 interface DriveData {
-  files: DriveFile[];
+  files: OneDriveFile[];
   folderName: string | null;
   isFile: boolean;
   nextPageToken: string | null;
 }
 
-interface PublicDriveViewProps {
+interface OneDrivePublicviewProps {
   link: string;
   view: "list" | "grid";
 }
@@ -34,12 +34,12 @@ const CheckIcon = () => (
   </svg>
 );
 
-const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
+const OneDrivePublicview = ({ link, view }: OneDrivePublicviewProps) => {
   const [fetchState, setFetchState] = useState<FetchState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [data, setData] = useState<DriveData | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<Map<string, DriveFile>>(
+  const [selectedFiles, setSelectedFiles] = useState<Map<string, OneDriveFile>>(
     new Map(),
   );
   const [isDownloading, setIsDownloading] = useState(false);
@@ -62,26 +62,41 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [breadcrumb, setBreadcrumb] = useState<BreadcrumbEntry[]>([]);
   const currentFolderId = useRef<string | null>(null);
+  const currentShareToken = useRef<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchDrive = useCallback(
-    async (id: string, pageToken?: string, append = false) => {
+  const fetchOneDrive = useCallback(
+    async (
+      params: { link?: string; itemId?: string },
+      pageToken?: string,
+      append = false,
+    ) => {
       if (!append) setFetchState("loading");
       else setLoadingMore(true);
       setErrorMsg("");
 
       try {
-        const url = new URL("/api/drive", window.location.origin);
-        url.searchParams.set("id", id);
-        if (pageToken) url.searchParams.set("pageToken", pageToken);
+        const res = await fetch("/api/onedrive", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            link: params.link,
+            itemId: params.itemId,
+            shareToken: currentShareToken.current,
+            pageToken,
+          }),
+        });
 
-        const res = await fetch(url.toString());
         const json = await res.json();
 
         if (!res.ok) {
           setErrorMsg(json.error ?? "Something went wrong.");
           setFetchState("error");
           return;
+        }
+
+        if (json.shareToken) {
+          currentShareToken.current = json.shareToken;
         }
 
         setData((prev) => ({
@@ -107,14 +122,18 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && data?.nextPageToken && !loadingMore) {
-          fetchDrive(currentFolderId.current!, data.nextPageToken, true);
+          fetchOneDrive(
+            { itemId: currentFolderId.current! },
+            data.nextPageToken,
+            true,
+          );
         }
       },
       { threshold: 0.1 },
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [data?.nextPageToken, loadingMore, fetchDrive]);
+  }, [data?.nextPageToken, loadingMore, fetchOneDrive]);
 
   useEffect(() => {
     if (!link) {
@@ -124,19 +143,11 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       setSelectedFiles(new Map());
       return;
     }
-    const parsed = parseDriveLink(link);
-    if (!parsed) {
-      setErrorMsg(
-        "Could not parse this Drive link. Please paste a valid Google Drive URL.",
-      );
-      setFetchState("error");
-      return;
-    }
-    currentFolderId.current = parsed.id;
-    setBreadcrumb([{ id: parsed.id, name: "Root" }]);
+    currentFolderId.current = null;
+    setBreadcrumb([{ id: "root", name: "Root" }]);
     setSelectedFiles(new Map());
-    fetchDrive(parsed.id);
-  }, [link, fetchDrive]);
+    fetchOneDrive({ link });
+  }, [link, fetchOneDrive]);
 
   useEffect(() => {
     if (
@@ -151,18 +162,18 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   const handleFolderClick = (id: string, name: string) => {
     currentFolderId.current = id;
     setBreadcrumb((prev) => [...prev, { id, name }]);
-    fetchDrive(id);
+    fetchOneDrive({ itemId: id });
   };
 
   const handleBreadcrumbNavigate = (index: number) => {
     const entry = breadcrumb[index];
     currentFolderId.current = entry.id;
     setBreadcrumb((prev) => prev.slice(0, index + 1));
-    fetchDrive(entry.id);
+    fetchOneDrive({ itemId: entry.id });
   };
 
-  const toggleSelection = (file: DriveFile) => {
-    if (file.mimeType === "application/vnd.google-apps.folder") return;
+  const toggleSelection = (file: OneDriveFile) => {
+    if (file.isFolder) return;
     setSelectedFiles((prev) => {
       const next = new Map(prev);
       if (next.has(file.id)) next.delete(file.id);
@@ -172,9 +183,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   };
 
   const files = data?.files ?? [];
-  const selectableFiles = files.filter(
-    (f) => f.mimeType !== "application/vnd.google-apps.folder",
-  );
+  const selectableFiles = files.filter((f) => !f.isFolder);
   const allSelected =
     selectableFiles.length > 0 &&
     selectableFiles.every((f) => selectedFiles.has(f.id));
@@ -312,9 +321,15 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
         id: f.id,
         name: f.name,
         mimeType: f.mimeType,
+        downloadUrl: f.downloadUrl,
+        source: "onedrive",
       }));
       await streamDownload(
-        { files: payload },
+        {
+          source: "onedrive",
+          shareToken: currentShareToken.current, // store this from the API response
+          files: payload,
+        },
         "compressed_images.zip",
         abortController.signal,
       );
@@ -350,8 +365,10 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
     try {
       await streamDownload(
         {
-          folderId: currentFolderId.current,
-          folderName: data?.folderName ?? "drive",
+          source: "onedrive",
+          shareToken: currentShareToken.current,
+          folderId: currentFolderId.current, // optional, for root-level "download all"
+          folderName: data?.folderName,
         },
         `${data?.folderName ?? "drive"}.zip`,
         abortController.signal,
@@ -407,7 +424,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
             strokeLinecap="round"
           />
         </svg>
-        <p className="text-sm font-medium text-white/60 mt-4">
+        <p className="text-sm font-medium text-black/60 mt-4">
           No drive loaded
         </p>
       </div>
@@ -485,7 +502,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
             disabled={isDownloading}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/90 bg-blue-500/50 border border-neutral-300/50 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            Select All & Download
+            Download All
           </button>
           {selectedFiles.size > 0 && (
             <button
@@ -624,4 +641,4 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   );
 };
 
-export default PublicDriveView;
+export default OneDrivePublicview;

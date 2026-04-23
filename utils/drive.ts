@@ -56,6 +56,18 @@ export interface DriveFile {
   webViewLink?: string;
   iconLink?: string;
 }
+export interface OneDriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: string; // bytes as string (files only)
+  modifiedTime?: string; // ISO 8601
+  thumbnailLink?: string;
+  webViewLink?: string;
+  iconLink?: string;
+  downloadUrl?: string;
+  isFolder?: boolean;
+}
 
 export interface DriveListResponse {
   files: DriveFile[];

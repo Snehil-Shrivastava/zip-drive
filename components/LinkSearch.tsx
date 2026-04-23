@@ -23,15 +23,30 @@ const LinkSearch = ({ type, onView }: LinkSearchProps) => {
   const router = useRouter();
   const [value, setValue] = useState("");
 
+  // const handleView = () => {
+  //   const trimmed = value.trim();
+  //   if (!trimmed) return;
+
+  //   if (onView) {
+  //     // In-page usage: let the parent handle it
+  //     onView(trimmed);
+  //   } else {
+  //     // Dashboard usage: navigate with link as query param
+  //     router.push(`${config[type].route}?link=${encodeURIComponent(trimmed)}`);
+  //   }
+  // };
+
   const handleView = () => {
     const trimmed = value.trim();
     if (!trimmed) return;
 
     if (onView) {
-      // In-page usage: let the parent handle it
       onView(trimmed);
+    } else if (type === "onedrive") {
+      const key = `od_${Date.now()}`;
+      sessionStorage.setItem(key, trimmed);
+      router.push(`${config[type].route}?l=${key}`);
     } else {
-      // Dashboard usage: navigate with link as query param
       router.push(`${config[type].route}?link=${encodeURIComponent(trimmed)}`);
     }
   };
