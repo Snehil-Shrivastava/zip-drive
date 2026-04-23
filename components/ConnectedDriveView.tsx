@@ -434,12 +434,12 @@ const ConnectedDriveView = ({ tab, view }: ConnectedDriveViewProps) => {
         )}
       </div>
 
-      <DownloadProgressModal
+      {/* <DownloadProgressModal
         isOpen={downloadProgress.isOpen}
         receivedBytes={downloadProgress.receivedBytes}
         totalBytes={downloadProgress.totalBytes}
         onCancel={handleCancelDownload}
-      />
+      /> */}
     </div>
   );
 };
