@@ -433,7 +433,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
             disabled={isDownloading}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/90 bg-blue-500/50 border border-neutral-300/50 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            Download All
+            Select All and Download
           </button>
           <span>
             Total Selected:{" "}
