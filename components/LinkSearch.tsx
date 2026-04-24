@@ -3,38 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-interface LinkSearchProps {
-  type: "onedrive" | "gdrive";
-  onView?: (link: string) => void; // optional override
-}
-
 const config = {
-  onedrive: {
-    route: "/onedrive",
-    buttonColor: "bg-brand-blue hover:bg-blue-600",
-  },
   gdrive: {
     route: "/gdrive",
     buttonColor: "bg-brand-green hover:bg-green-600",
   },
 };
 
-const LinkSearch = ({ type, onView }: LinkSearchProps) => {
+const LinkSearch = ({ onView }: { onView?: (link: string) => void }) => {
   const router = useRouter();
   const [value, setValue] = useState("");
-
-  // const handleView = () => {
-  //   const trimmed = value.trim();
-  //   if (!trimmed) return;
-
-  //   if (onView) {
-  //     // In-page usage: let the parent handle it
-  //     onView(trimmed);
-  //   } else {
-  //     // Dashboard usage: navigate with link as query param
-  //     router.push(`${config[type].route}?link=${encodeURIComponent(trimmed)}`);
-  //   }
-  // };
 
   const handleView = () => {
     const trimmed = value.trim();
@@ -42,12 +20,8 @@ const LinkSearch = ({ type, onView }: LinkSearchProps) => {
 
     if (onView) {
       onView(trimmed);
-    } else if (type === "onedrive") {
-      const key = `od_${Date.now()}`;
-      sessionStorage.setItem(key, trimmed);
-      router.push(`${config[type].route}?l=${key}`);
     } else {
-      router.push(`${config[type].route}?link=${encodeURIComponent(trimmed)}`);
+      router.push(`${config.gdrive.route}?link=${encodeURIComponent(trimmed)}`);
     }
   };
 
@@ -104,7 +78,7 @@ const LinkSearch = ({ type, onView }: LinkSearchProps) => {
       )}
 
       <button
-        className={`text-white font-semibold ${config[type].buttonColor} py-1.5 px-5 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+        className={`text-white font-semibold ${config.gdrive.buttonColor} py-1.5 px-5 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
         onClick={handleView}
         disabled={!value.trim()}
       >

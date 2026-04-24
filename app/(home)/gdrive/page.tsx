@@ -19,15 +19,11 @@ const GDrivePage = () => {
     <div className="h-full pt-40 pb-20 px-20 max-h-screen">
       <div className="h-full">
         <div className="py-8 flex relative bg-white rounded-t-xl px-15 items-center shadow-[0_-4px_25px_2px_rgba(0,0,0,0.08)]">
-          {/* <div className="absolute left-20 top-1/2 -translate-y-1/2">
-            <Image src={gdriveLogo} alt="" className="w-50" />
-          </div> */}
-          <div className="">
+          <div>
             <Image src={gdriveLogo} alt="" className="w-50" />
           </div>
           <div className="flex items-center justify-center flex-1">
             <LinkSearch
-              type="gdrive"
               onView={(submittedLink) => {
                 // Updating the URL will automatically re-render this component
                 // and update the 'link' variable above.
