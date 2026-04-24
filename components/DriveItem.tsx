@@ -196,7 +196,7 @@ const DriveItem = ({
       )}
 
       {/* Thumbnail or icon */}
-      <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-white/5 flex items-center justify-center">
+      <div className="w-full aspect-4/3 rounded-lg overflow-hidden bg-white/5 flex items-center justify-center">
         {file.thumbnailLink ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
