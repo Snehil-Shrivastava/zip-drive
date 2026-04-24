@@ -17,10 +17,10 @@ const Dashboard = () => {
       </div>
       <div className="text-center">
         <p className="w-265 mx-auto text-xl leading-8">
-          A simple online tool that compresses images directly from Google Drive
-          and OneDrive. You can use public links for free without signing up.
-          For private files, just log in or create an account to securely access
-          and compress your images.
+          A simple online tool that compresses images directly from Google
+          Drive. You can use public links for free without signing up. For
+          private files, just log in or create an account to securely access and
+          compress your images.
         </p>
       </div>
       <div className="flex items-center justify-center">
