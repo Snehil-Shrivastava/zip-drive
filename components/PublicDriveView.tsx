@@ -464,10 +464,10 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between bg-brand-blue px-10 py-6">
+      <div className="flex max-sm:flex-col max-sm:gap-5 items-center max-sm:items-start justify-between bg-brand-blue px-10 max-sm:px-5 py-6">
         {data?.folderName && (
           <div className="flex gap-15 items-center">
-            <h2 className="text-base font-semibold text-white">
+            <h2 className="text-base max-sm:text-sm font-semibold text-white">
               {data.folderName}
             </h2>
             <span className="text-xs font-medium text-white/90 bg-blue-500/50 border border-neutral-300/50 px-4 py-2 rounded-md">
@@ -476,14 +476,14 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
           </div>
         )}
         <div className="flex gap-10 items-center text-white">
-          <span>
+          <span className="max-sm:text-sm">
             Total Selected:{" "}
             <span>{formatSize(totalSelectedBytes.toString())}</span>
           </span>
           <button
             onClick={handleDownloadAll}
             disabled={isDownloading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/90 bg-blue-500/50 border border-neutral-300/50 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 max-sm:px-2 py-2 text-sm font-medium text-white/90 bg-blue-500/50 border border-neutral-300/50 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             Select All & Download
           </button>

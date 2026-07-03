@@ -10,7 +10,13 @@ const config = {
   },
 };
 
-const LinkSearch = ({ onView }: { onView?: (link: string) => void }) => {
+const LinkSearch = ({
+  onView,
+  className,
+}: {
+  onView?: (link: string) => void;
+  className?: string;
+}) => {
   const router = useRouter();
   const [value, setValue] = useState("");
 
@@ -28,7 +34,9 @@ const LinkSearch = ({ onView }: { onView?: (link: string) => void }) => {
   const handleClear = () => setValue("");
 
   return (
-    <div className="flex max-sm:flex-col items-center justify-center gap-5 max-w-175 max-sm:w-full mx-auto relative">
+    <div
+      className={`flex items-center justify-center gap-5 max-w-175 max-sm:w-full mx-auto relative ${className ? className : "max-sm:flex-col"}`}
+    >
       <div className="relative max-sm:w-full">
         <svg
           className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#a9a8a8]"
@@ -63,7 +71,7 @@ const LinkSearch = ({ onView }: { onView?: (link: string) => void }) => {
       {value && (
         <button
           onClick={handleClear}
-          className="absolute right-28 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute right-28 max-sm:right-3 top-1/2 max-sm:top-5.5 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
           title="Clear"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

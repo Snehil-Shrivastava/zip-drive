@@ -16,11 +16,11 @@ const GDrivePage = () => {
   const link = searchParams.get("link") || "";
 
   return (
-    <div className="h-full pt-40 pb-20 px-20 max-h-screen">
-      <div className="h-full">
-        <div className="py-8 flex relative bg-white rounded-t-xl px-15 items-center shadow-[0_-4px_25px_2px_rgba(0,0,0,0.08)]">
+    <div className="h-full pt-40 pb-20 px-20 max-sm:px-8 max-h-screen">
+      <div className="h-full overflow-x-hidden">
+        <div className="py-8 flex max-sm:flex-col max-sm:gap-10 relative bg-white rounded-t-xl px-15 max-sm:px-9 items-center shadow-[0_-4px_25px_2px_rgba(0,0,0,0.08)]">
           <div>
-            <Image src={gdriveLogo} alt="" className="w-50" />
+            <Image src={gdriveLogo} alt="" className="w-50 max-sm:w-50" />
           </div>
           <div className="flex items-center justify-center flex-1">
             <LinkSearch
@@ -32,9 +32,10 @@ const GDrivePage = () => {
                   { scroll: false },
                 );
               }}
+              className="max-sm:flex-row"
             />
           </div>
-          <div>
+          <div className="max-sm:w-full">
             <div className="view-toggle flex rounded-md gap-5">
               <button
                 className={`view-btn px-2.5 py-2 hover:text-white hover:bg-gray-500/50 ${view === "list" ? "text-brand-blue bg-gray-500/30" : "text-neutral-500/50"}`}
