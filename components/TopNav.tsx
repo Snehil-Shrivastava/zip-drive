@@ -19,7 +19,7 @@ const TopNav = () => {
   };
 
   return (
-    <div className="py-5 bg-white shadow-[0_4px_17px_-8px_rgba(0,0,0,0.1)] fixed top-0 inset-x-0 max-sm:h-20">
+    <div className="py-5 bg-white shadow-[0_4px_17px_-8px_rgba(0,0,0,0.1)] fixed top-0 inset-x-0 max-sm:h-20 z-99">
       <div className="flex justify-between items-center w-[90%] max-sm:w-[95%] mx-auto max-sm:h-full">
         {/* Logo */}
         <Link href={"/"} className="flex gap-5 max-sm:gap-2.5 items-center">

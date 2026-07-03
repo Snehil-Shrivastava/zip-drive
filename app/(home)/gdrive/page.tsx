@@ -16,7 +16,7 @@ const GDrivePage = () => {
   const link = searchParams.get("link") || "";
 
   return (
-    <div className="h-full pt-40 pb-20 px-20 max-sm:px-8 max-h-screen">
+    <div className="md:h-full pt-40 pb-20 px-20 max-sm:px-8 md:max-h-screen max-md:min-h-screen">
       <div className="h-full">
         <div className="py-8 flex max-sm:flex-col max-sm:gap-10 relative bg-white rounded-t-xl px-15 max-sm:px-9 items-center shadow-[0_-4px_25px_2px_rgba(0,0,0,0.08)]">
           <div>
