@@ -159,7 +159,7 @@ const DriveItem = ({
         </span>
 
         {/* Size */}
-        <span className="hidden md:block text-xs text-black/30 w-55 shrink-0 text-center">
+        <span className="block text-xs text-black/30 w-55 max-sm:w-20 shrink-0 text-center">
           {folder ? "—" : formatSize(file.size)}
         </span>
       </button>

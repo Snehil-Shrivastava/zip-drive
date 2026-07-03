@@ -17,7 +17,7 @@ const GDrivePage = () => {
 
   return (
     <div className="h-full pt-40 pb-20 px-20 max-sm:px-8 max-h-screen">
-      <div className="h-full overflow-x-hidden">
+      <div className="h-full">
         <div className="py-8 flex max-sm:flex-col max-sm:gap-10 relative bg-white rounded-t-xl px-15 max-sm:px-9 items-center shadow-[0_-4px_25px_2px_rgba(0,0,0,0.08)]">
           <div>
             <Image src={gdriveLogo} alt="" className="w-50 max-sm:w-50" />

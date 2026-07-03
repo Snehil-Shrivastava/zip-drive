@@ -457,7 +457,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
   const isEmpty = files.length === 0;
 
   return (
-    <div className="flex flex-col flex-1 bg-white rounded-xl shadow-[0_4px_25px_2px_rgba(0,0,0,0.08)] h-[85%]">
+    <div className="flex flex-col flex-1 bg-white rounded-xl shadow-[0_4px_25px_2px_rgba(0,0,0,0.08)] h-[85%] max-sm:h-[75%]">
       <DriveBreadcrumb
         trail={breadcrumb}
         onNavigate={handleBreadcrumbNavigate}
@@ -466,7 +466,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       {/* Header */}
       <div className="flex max-sm:flex-col max-sm:gap-5 items-center max-sm:items-start justify-between bg-brand-blue px-10 max-sm:px-5 py-6">
         {data?.folderName && (
-          <div className="flex gap-15 items-center">
+          <div className="flex gap-15 max-sm:gap-5 items-center">
             <h2 className="text-base max-sm:text-sm font-semibold text-white">
               {data.folderName}
             </h2>
@@ -475,7 +475,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
             </span>
           </div>
         )}
-        <div className="flex gap-10 items-center text-white">
+        <div className="flex gap-10 max-sm:gap-5 items-center text-white">
           <span className="max-sm:text-sm">
             Total Selected:{" "}
             <span>{formatSize(totalSelectedBytes.toString())}</span>
@@ -483,7 +483,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
           <button
             onClick={handleDownloadAll}
             disabled={isDownloading}
-            className="flex items-center gap-2 px-4 max-sm:px-2 py-2 text-sm font-medium text-white/90 bg-blue-500/50 border border-neutral-300/50 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 max-sm:px-2 py-2 text-sm font-medium text-white/90 bg-blue-500/50 border border-neutral-300/50 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer"
           >
             Select All & Download
           </button>
@@ -527,7 +527,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
       )}
 
       {!isEmpty && view === "list" && (
-        <div className="pr-15 pl-11 pt-5 pb-2">
+        <div className="pr-15 pl-11 max-sm:px-5 pt-5 pb-2">
           <div className="flex items-center gap-4 text-xs text-black/50 uppercase tracking-wider">
             <div className="shrink-0 ml-1 flex items-center justify-center">
               <div
@@ -548,7 +548,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
             <span className="hidden md:block w-55 shrink-0 text-center">
               Modified
             </span>
-            <span className="hidden md:block w-55 shrink-0 text-center">
+            <span className="block w-55 max-sm:w-20 shrink-0 text-center">
               Size
             </span>
           </div>
@@ -559,7 +559,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
         {!isEmpty && (
           <>
             {view === "list" ? (
-              <div className="flex flex-col divide-y divide-black px-11 gap-1">
+              <div className="flex flex-col divide-y divide-black px-11 max-sm:px-5 gap-1">
                 {files.map((file) => (
                   <DriveItem
                     key={file.id}
@@ -572,7 +572,7 @@ const PublicDriveView = ({ link, view }: PublicDriveViewProps) => {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-15 pt-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-15 max-sm:px-5 pt-8">
                 {files.map((file) => (
                   <DriveItem
                     key={file.id}
