@@ -19,12 +19,12 @@ const TopNav = () => {
   };
 
   return (
-    <div className="py-5 bg-white shadow-[0_4px_17px_-8px_rgba(0,0,0,0.1)] fixed top-0 inset-x-0">
-      <div className="flex justify-between items-center w-[90%] mx-auto">
+    <div className="py-5 bg-white shadow-[0_4px_17px_-8px_rgba(0,0,0,0.1)] fixed top-0 inset-x-0 max-sm:h-20">
+      <div className="flex justify-between items-center w-[90%] max-sm:w-[95%] mx-auto max-sm:h-full">
         {/* Logo */}
-        <Link href={"/"} className="flex gap-5 items-center">
-          <Image src={logo} alt="" className="w-9" />
-          <span className="font-extrabold text-3xl">
+        <Link href={"/"} className="flex gap-5 max-sm:gap-2.5 items-center">
+          <Image src={logo} alt="" className="w-9 max-sm:w-6" />
+          <span className="font-extrabold text-3xl max-sm:text-2xl">
             <span className="text-brand-orange">Zip</span>{" "}
             <span className="text-black">Drive</span>
           </span>
@@ -45,9 +45,15 @@ const TopNav = () => {
             <button
               onClick={handleConnect}
               disabled={status === "loading"}
-              className="py-1.5 px-4 rounded-md cursor-pointer bg-brand-orange hover:bg-amber-400 disabled:opacity-50 disabled:cursor-wait text-white font-semibold capitalize flex gap-3 items-center transition-colors"
+              className="py-1.5 max-sm:py-0.5 px-4 rounded-md cursor-pointer bg-brand-orange hover:bg-amber-400 disabled:opacity-50 disabled:cursor-wait text-white font-semibold capitalize flex gap-3 max-sm:gap-2 items-center transition-colors max-sm:text-sm"
             >
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 13 13"
+                fill="none"
+                className="max-sm:w-5 max-sn:h-5"
+              >
                 <path
                   d="M6.5 1v11M1 6.5h11"
                   stroke="currentColor"

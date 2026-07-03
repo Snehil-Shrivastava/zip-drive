@@ -28,8 +28,8 @@ const LinkSearch = ({ onView }: { onView?: (link: string) => void }) => {
   const handleClear = () => setValue("");
 
   return (
-    <div className="flex items-center justify-center gap-5 max-w-175 relative">
-      <div className="relative">
+    <div className="flex max-sm:flex-col items-center justify-center gap-5 max-w-175 max-sm:w-full mx-auto relative">
+      <div className="relative max-sm:w-full">
         <svg
           className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#a9a8a8]"
           width="14"
@@ -53,7 +53,7 @@ const LinkSearch = ({ onView }: { onView?: (link: string) => void }) => {
         <input
           type="text"
           placeholder="Paste public link..."
-          className="w-100 border border-gray-500/10 bg-[#F6F6F6] rounded-lg py-2 pl-9 pr-9 outline-none focus:bg-[#d2d2d2] transition-colors text-neutral-500"
+          className="w-100 max-sm:w-full border border-gray-500/10 bg-[#F6F6F6] rounded-lg py-2 pl-9 pr-9 outline-none focus:bg-[#d2d2d2] transition-colors text-neutral-500"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleView()}

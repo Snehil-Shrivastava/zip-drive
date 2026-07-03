@@ -5,10 +5,10 @@ import DriveLinkOptions from "@/components/DriveLinkOptions";
 
 const Dashboard = () => {
   return (
-    <div className="px-20 pt-50 flex flex-col gap-10 justify-center">
+    <div className="px-20 max-sm:px-8 pt-50 max-sm:pb-20 flex flex-col gap-10 justify-center">
       <div className="flex gap-5 items-center justify-center">
         <div>
-          <Image src={logo} alt="" className="w-12" />
+          <Image src={logo} alt="" className="w-12 max-sm:w-9" />
         </div>
         <span className="font-extrabold text-3xl">
           <span className="text-brand-orange">Zip</span>{" "}
@@ -16,7 +16,7 @@ const Dashboard = () => {
         </span>
       </div>
       <div className="text-center">
-        <p className="w-265 mx-auto text-xl leading-8">
+        <p className="w-265 max-sm:w-full mx-auto text-xl max-sm:text-sm max-sm:leading-5 leading-8">
           A simple online tool that compresses images directly from Google
           Drive. You can use public links for free without signing up. For
           private files, just log in or create an account to securely access and
